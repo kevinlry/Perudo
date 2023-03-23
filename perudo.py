@@ -39,6 +39,16 @@ class Perudo:
         '''
         self.mise = {'player': self.actual_player, 'n': n, 'de': de}
 
+    def reset_mise(self):
+        ''' 
+        reset_mise
+        Remet la mise à 0
+
+        Inputs: None
+        Return: None
+        '''
+        self.mise = {'player': 0, 'n': 0, 'de': 0}
+
     def next_player(self):
         ''' 
         next_player
@@ -49,6 +59,16 @@ class Perudo:
         '''
         return self.actual_player + 1 if self.actual_player != self.n_players else 1
 
+    def last_player(self):
+        ''' 
+        last_player
+        Retourne le joueur précédent
+
+        Inputs: None
+        Return: int - Numéro du joueur précédent
+        '''
+        return self.actual_player - 1 if self.actual_player != 1 else self.n_players
+
     def play(self, type, n=None, de=None):
         if (type == "mise"):
             self.set_mise(n, de)
@@ -57,13 +77,16 @@ class Perudo:
             count_des = self.count_des_in_game()
             if (count_des[self.mise['de']] >= self.mise['n']):
                 print(f"Dudo perdu, il y avait {count_des}")
-                #new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]
-                #new_n_des[self.actual_player] -= 1
+                new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]
+                new_n_des[self.actual_player - 1] -= 1
 
             else:
                 print(f"Dudo gagne, il y avait {count_des}")
+                new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]
+                new_n_des[self.last_player() - 1] -= 1
             
-            #self.distribution_des(new_n_des)
+            self.reset_mise()
+            self.distribution_des(new_n_des)
         
         self.actual_player = self.next_player()
 
@@ -93,3 +116,4 @@ game.print_state_game()
 game.play("mise", 1, 5)
 game.print_state_game(player = 2)
 game.play(type = "dudo")
+game.print_state_game()
