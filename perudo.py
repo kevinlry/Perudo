@@ -1,13 +1,15 @@
 import numpy as np
+from IA_Players import RandomPlayer
 
 class Perudo:
-    def __init__(self, n_players=2, n_de_max=3):
-        self.n_players = n_players
+    def __init__(self, players=[RandomPlayer(), RandomPlayer()], n_de_max=3, start_player=1):
+        self.n_players = len(players)
+        self.players = players
         self.n_de_max = n_de_max
         self.mains = None
-        self.actual_player = np.random.randint(1, n_players + 1)
+        self.actual_player = start_player
         self.mise = {'player': 0, 'n': 0, 'de': 0}
-        self.distribution_des([n_de_max for i in range(n_players)])
+        self.distribution_des([n_de_max for i in range(len(players))])
 
     def distribution_des(self, n_des):
         ''' 
@@ -49,55 +51,128 @@ class Perudo:
         '''
         self.mise = {'player': 0, 'n': 0, 'de': 0}
 
-    def next_player(self):
+    def next_player(self, actual_player):
         ''' 
         next_player
         Retourne le joueur suivant
 
-        Inputs: None
+        Inputs: actual_player - Int - Numéro du joueur actuel
         Return: int - Numéro du joueur suivant
         '''
-        return self.actual_player + 1 if self.actual_player != self.n_players else 1
+        next_player = actual_player + 1 if actual_player != self.n_players else 1
 
-    def last_player(self):
+        if sum(self.mains[next_player - 1]) == 0:
+            next_player = self.next_player(next_player)
+        
+        return next_player
+
+    def last_player(self, actual_player):
         ''' 
         last_player
         Retourne le joueur précédent
 
-        Inputs: None
+        Inputs: actual_player - Int - Numéro du joueur actuel
         Return: int - Numéro du joueur précédent
         '''
-        return self.actual_player - 1 if self.actual_player != 1 else self.n_players
+        last_player = actual_player - 1 if actual_player != 1 else self.n_players
+
+        if sum(self.mains[last_player - 1]) == 0:
+            last_player = self.last_player(last_player)
+        
+        return last_player
 
     def play(self, type, n=None, de=None):
+        ''' 
+        play
+        Permet de jouer une mise ou de dire "Dudo"
+
+        Inputs: 
+            type - str - Type de coup ("mise" ou "dudo")
+            n - Int - Nombre de dés misés
+            de - Int - Valeur du dé misé
+        Return: None
+        '''
         if (type == "mise"):
             self.set_mise(n, de)
+            # Le joueur suivant joue
+            self.actual_player = self.next_player(self.actual_player)
         
         elif (type == "dudo"):
             count_des = self.count_des_in_game()
-            if (count_des[self.mise['de']] >= self.mise['n']):
-                print(f"Dudo perdu, il y avait {count_des}")
-                new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]
-                new_n_des[self.actual_player - 1] -= 1
 
+            if (count_des[self.mise['de'] - 1] >= self.mise['n']):
+                n_player_perte_de = self.actual_player
+                print(f"Dudo perdu, le joueur {self.actual_player - 1} perd un dé, il y avait {count_des}")
             else:
-                print(f"Dudo gagne, il y avait {count_des}")
-                new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]
-                new_n_des[self.last_player() - 1] -= 1
+                n_player_perte_de = self.last_player(self.actual_player)
+                print(f"Dudo gagne, le joueur {n_player_perte_de} perd un dé, il y avait {count_des}")
+            
+            # On retire un dé au joueur qui a perdu
+            new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]    
+            new_n_des[n_player_perte_de - 1] -= 1
+
+            # Le joueur qui a perdu joue
+            self.actual_player = self.next_player(self.actual_player)
             
             self.reset_mise()
             self.distribution_des(new_n_des)
-        
-        self.actual_player = self.next_player()
+
+    def get_alternatives(self):
+        ''' 
+        get_alternatives
+        Retourne toutes les alternatives autorisées selon la mise du joueur précédent
+
+        Inputs: None
+        Return: List[Dict] - Liste des alternatives autorisées
+        '''
+        alternatives = []
+        mise_actuelle = self.mise
+        n_des_total = sum(self.count_des_in_game())
+
+        # Si aucune mise actuelle
+        if (mise_actuelle['de'] == 0):
+            for i in range(1, 7):
+                for j in range(1, n_des_total + 1):
+                    alternatives.append({'n': j, 'de': i})
+
+        else:
+            # Augmentation du nombre de dé misés sans changement de valeur
+            if (mise_actuelle['n'] + 1 <= n_des_total):
+                for i in range(mise_actuelle['n'] + 1, n_des_total + 1):
+                    alternatives.append({'n': i, 'de': mise_actuelle['de']})
+
+            # Augmentation de la valeur sans changement du nombre de dés misés
+            if (mise_actuelle['de'] < 6):
+                for i in range(mise_actuelle['de'] + 1, 7):
+                    alternatives.append({'n': mise_actuelle['n'], 'de': i})
+
+            # Diminution de la valeur avec changement obligatoire du nombre de dés misés
+            if ((mise_actuelle['de'] > 1) & (mise_actuelle['de'] < 6)):
+                for i in range(1, mise_actuelle['de']):
+                    for j in range(mise_actuelle['n'] + 1, n_des_total + 1):
+                        alternatives.append({'n': j, 'de': i})
+
+        return alternatives
 
     def count_des_in_game(self):
         count = np.zeros(6, dtype = int)
 
         for main in self.mains:
             for de in main:
-                count[de - 1] += 1
+                if (de != 0):
+                    count[de - 1] += 1
         
         return count
+    
+    def check_game_end(self):
+        winner = -1
+
+        mains_non_vides = [index for index, main in enumerate(self.mains) if sum(main) != 0]
+
+        if len(mains_non_vides) == 1:
+            winner = mains_non_vides[0] + 1
+
+        return winner
 
     def print_state_game(self, player=None):
         if player:
@@ -111,9 +186,22 @@ class Perudo:
         if self.mise['player'] > 0:
             print(f"Mise du joueur {self.mise['player']} : {self.mise['n']} - {self.mise['de']}")
 
-game = Perudo()
+n_players = 2
+start_player = np.random.randint(1, n_players + 1)
+
+game = Perudo(n_players = n_players, start_player = start_player)
 game.print_state_game()
-game.play("mise", 1, 5)
-game.print_state_game(player = 2)
-game.play(type = "dudo")
-game.print_state_game()
+
+while game.check_game_end() == -1:
+    game.print_state_game(player = game.actual_player)
+
+    alternatives = game.get_alternatives()
+
+    policy = RandomPlayer().get_policy(alternatives)
+
+    if (policy == "dudo"):
+        game.play(type = "dudo")
+    else:
+        game.play("mise", policy["n"], policy["de"])
+
+print(game.check_game_end())
