@@ -2,14 +2,13 @@ import numpy as np
 from IA_Players import RandomPlayer
 
 class Perudo:
-    def __init__(self, players=[RandomPlayer(), RandomPlayer()], n_de_max=3, start_player=1):
-        self.n_players = len(players)
-        self.players = players
+    def __init__(self, n_players, n_de_max=3, start_player=1):
+        self.n_players = n_players
         self.n_de_max = n_de_max
         self.mains = None
         self.actual_player = start_player
         self.mise = {'player': 0, 'n': 0, 'de': 0}
-        self.distribution_des([n_de_max for i in range(len(players))])
+        self.distribution_des([n_de_max for i in range(n_players)])
 
     def distribution_des(self, n_des):
         ''' 
@@ -81,31 +80,30 @@ class Perudo:
         
         return last_player
 
-    def play(self, type, n=None, de=None):
+    def play(self, policy):
         ''' 
         play
         Permet de jouer une mise ou de dire "Dudo"
 
-        Inputs: 
-            type - str - Type de coup ("mise" ou "dudo")
-            n - Int - Nombre de dés misés
-            de - Int - Valeur du dé misé
-        Return: None
+        Inputs: policy - Dict - Policy joué
+        Return: n_player_perte_de - Numéro du joueur qui a perdu un dé le cas échéant
         '''
-        if (type == "mise"):
-            self.set_mise(n, de)
+        n_player_perte_de = None
+
+        if (policy['type'] == "mise"):
+            self.set_mise(policy['n'], policy['de'])
             # Le joueur suivant joue
             self.actual_player = self.next_player(self.actual_player)
         
-        elif (type == "dudo"):
+        else:
             count_des = self.count_des_in_game()
 
             if (count_des[self.mise['de'] - 1] >= self.mise['n']):
                 n_player_perte_de = self.actual_player
-                print(f"Dudo perdu, le joueur {self.actual_player - 1} perd un dé, il y avait {count_des}")
+                #print(f"Dudo perdu, le joueur {self.actual_player - 1} perd un dé, il y avait {count_des[self.mise['de'] - 1]} - {self.mise['de']}")
             else:
                 n_player_perte_de = self.last_player(self.actual_player)
-                print(f"Dudo gagne, le joueur {n_player_perte_de} perd un dé, il y avait {count_des}")
+                #print(f"Dudo gagne, le joueur {n_player_perte_de} perd un dé, il y avait {count_des[self.mise['de'] - 1]} - {self.mise['de']}")
             
             # On retire un dé au joueur qui a perdu
             new_n_des = [self.n_de_max - sum(de == 0 for de in main) for main in self.mains]    
@@ -116,6 +114,8 @@ class Perudo:
             
             self.reset_mise()
             self.distribution_des(new_n_des)
+
+            return n_player_perte_de
 
     def get_alternatives(self):
         ''' 
@@ -154,13 +154,18 @@ class Perudo:
 
         return alternatives
 
-    def count_des_in_game(self):
+    def count_des_in_game(self, player=None):
         count = np.zeros(6, dtype = int)
 
-        for main in self.mains:
-            for de in main:
+        if player:
+            for de in self.mains[player - 1]:
                 if (de != 0):
                     count[de - 1] += 1
+        else:
+            for main in self.mains:
+                for de in main:
+                    if (de != 0):
+                        count[de - 1] += 1
         
         return count
     
@@ -186,22 +191,24 @@ class Perudo:
         if self.mise['player'] > 0:
             print(f"Mise du joueur {self.mise['player']} : {self.mise['n']} - {self.mise['de']}")
 
-n_players = 2
-start_player = np.random.randint(1, n_players + 1)
 
-game = Perudo(n_players = n_players, start_player = start_player)
-game.print_state_game()
+if (False):
+    n_players = 2
+    start_player = np.random.randint(1, n_players + 1)
 
-while game.check_game_end() == -1:
-    game.print_state_game(player = game.actual_player)
+    pygame.init()
+    fenetre = pygame.display.set_mode((640, 480))
 
-    alternatives = game.get_alternatives()
+    game = Perudo(n_players = n_players, start_player = start_player)
+    game.print_state_game()
 
-    policy = RandomPlayer().get_policy(alternatives)
+    while game.check_game_end() == -1:
+        game.print_state_game(player = game.actual_player)
 
-    if (policy == "dudo"):
-        game.play(type = "dudo")
-    else:
-        game.play("mise", policy["n"], policy["de"])
+        alternatives = game.get_alternatives()
 
-print(game.check_game_end())
+        policy = RandomPlayer().get_policy(alternatives)
+
+        game.play(policy)
+
+    print(game.check_game_end())
