@@ -3,7 +3,7 @@ import pandas as pd
 from IA_Players import RandomPlayer
 from perudoGame import Perudo
 
-def simulate_perudo(agentPolicy, robotPolicy):
+def simulate_perudo(agentPolicy, robotPolicy, params_policy_agent=None, params_policy_robot=None, n_de_max=5, n_valeur_max=6):
 
     gameHistory = {'state': [], 
                    'action': [], 
@@ -13,12 +13,10 @@ def simulate_perudo(agentPolicy, robotPolicy):
     n_players = 2
     start_player = np.random.randint(1, n_players + 1)
 
-    game = Perudo(n_players = n_players, start_player = start_player)
+    game = Perudo(n_players = n_players, n_de_max = n_de_max, n_valeur_max = n_valeur_max, start_player = start_player)
 
     i = -1
     while game.check_game_end() == -1:
-        alternatives = game.get_alternatives()
-
         # Jeu de l'agent
         if game.actual_player == 1:
             gameHistory['state'].append(None)
@@ -28,10 +26,10 @@ def simulate_perudo(agentPolicy, robotPolicy):
 
             i = i + 1
 
-            policy = agentPolicy().get_policy(alternatives)
+            policy = agentPolicy(params_policy_agent).get_policy(game)
             
             # only collect information here
-            gameHistory['state'][i] = ' '.join(str(x) for x in game.count_des_in_game(player = 1)) + ' ' + str(sum(game.count_des_in_game(player = 2))) + ' ' + str(game.mise['n']) + ' ' + str(game.mise['de'])
+            gameHistory['state'][i] = game.get_state()
 
             gameHistory['action'][i] = policy
             gameHistory['reward'][i] = 0
@@ -46,13 +44,13 @@ def simulate_perudo(agentPolicy, robotPolicy):
         
         # Jeu du robot
         else:
-            policy = robotPolicy().get_policy(alternatives)
+            policy = robotPolicy(params_policy_robot).get_policy(game)
 
             # play the policy
             de_perdu = game.play(policy)
 
             if (i > -1):
-                gameHistory['nextState'][i] = ' '.join(str(x) for x in game.count_des_in_game(player = 1)) + ' ' + str(sum(game.count_des_in_game(player = 2))) + ' ' + str(game.mise['n']) + ' ' + str(game.mise['de'])
+                gameHistory['nextState'][i] = game.get_state()
 
             if (de_perdu == 1):
                 gameHistory['reward'][i] = -1
@@ -66,44 +64,58 @@ def simulate_perudo(agentPolicy, robotPolicy):
     
     return(gameHistory)
 
-def run_qlearning(df):
-    stateEnums = set(df['state'] + df['nextState'])
-    actionEnums = set(df['action'])
+def run_qlearning():
+    try:
+        qmatrix = pd.read_pickle('qmatrix')
+    except:
+        # run bunch of simulations
+        gameSimulations = []
+        N = 7000
 
-    myvec = [-20 for i in range(len(stateEnums) * len(actionEnums))]
-    qmatrix = pd.DataFrame(myvec.reshape(len(stateEnums), len(actionEnums)))
-
-    notConverged = True
-    qGamma = 0.9
-    qAlpha = 0.8
-    eps = 0.0
-
-    while(notConverged):
-        oldQmatrix = qmatrix
-        for index in range(1, len(df.index)):
-            index_s = stateEnums == df['state'][index]
-            index_sp = stateEnums == df['nextState'][index]
-            index_a = actionEnums == df['action'][index]
-            oldValue = qmatrix[index_s, index_a]
-
-            if (np.random.uniform(low=0, high=1, size=1) < eps):
-                newValue = df['reward'][index] + qGamma * np.random.choice(qmatrix[index_sp,])[0]     
-            else:
-                newValue = df['reward'][index] + qGamma * qmatrix[index_sp, our_which_max_(qmatrix[index_sp,])]
+        for i in range(1, N):
+            o = pd.DataFrame.from_dict(simulate_perudo(RandomPlayer, RandomPlayer, n_de_max=3, n_valeur_max=4))
+            o['simu'] = i
+            o['reward_of_simu'] = o['reward'].iloc[-1]
             
-            qmatrix[index_s, index_a] = oldValue + qAlpha * (newValue - oldValue)
+            gameSimulations.append(o)
 
-        maxDiffQmatrix = max(abs(qmatrix - oldQmatrix))
-        print(maxDiffQmatrix)
-        notConverged = (maxDiffQmatrix > 1e-3)
+        df = pd.concat(gameSimulations)
 
-    return({'stateEnums': stateEnums, 'actionEnums': actionEnums, 'qsa': qmatrix})
+        stateEnums = np.array(list(set(df['state'].to_list() + df['nextState'].to_list())))
+        actionEnums = np.array(list(set([str(i) for i in df['action']])))
 
-def our_which_max_(x, return_all = False):
-    ind = np.where(x == max(x))
-    if (len(ind) == 1 | return_all):
-        return(ind)
-    else:
-        return(np.random.choice(ind)[0])
+        myvec = np.array([-20 for i in range(len(stateEnums) * len(actionEnums))])
+        qmatrix = pd.DataFrame(myvec.reshape(len(stateEnums), len(actionEnums)))
 
-#print(pd.DataFrame.from_dict(simulate_perudo(RandomPlayer, RandomPlayer)))
+        notConverged = True
+        qGamma = 0.9
+        qAlpha = 0.8
+        eps = 0.0
+
+        while (notConverged):
+            oldQmatrix = qmatrix.copy()
+
+            for index in range(0, len(df.index)):
+                index_s = np.where(stateEnums == df['state'].iloc[index])[0][0]
+                index_sp = np.where(stateEnums == df['nextState'].iloc[index])[0][0]
+                index_a = np.where(actionEnums == str(df['action'].iloc[index]))[0][0]
+
+                oldValue = qmatrix.at[index_s, index_a]
+
+                if (np.random.uniform(low=0, high=1, size=1) < eps):
+                    newValue = df['reward'].iloc[index] + qGamma * np.random.choice(qmatrix.iloc[index_sp,:])[0]     
+                else:
+                    newValue = df['reward'].iloc[index] + qGamma * qmatrix.iloc[index_sp, np.argmax(qmatrix.iloc[index_sp,:])]
+                
+                qmatrix.iloc[index_s, index_a] = float(oldValue) + qAlpha * (float(newValue) - float(oldValue))
+
+            maxDiffQmatrix = abs(qmatrix - oldQmatrix).max().max()        
+            print(maxDiffQmatrix)
+            notConverged = (maxDiffQmatrix > 1e-2)
+
+        qmatrix.columns = actionEnums
+        qmatrix.index = stateEnums
+
+        qmatrix.to_pickle('qmatrix')
+
+    return qmatrix

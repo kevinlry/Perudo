@@ -2,9 +2,10 @@ import numpy as np
 from IA_Players import RandomPlayer
 
 class Perudo:
-    def __init__(self, n_players, n_de_max=3, start_player=1):
+    def __init__(self, n_players, n_de_max=5, n_valeur_max=6, start_player=1):
         self.n_players = n_players
         self.n_de_max = n_de_max
+        self.n_valeur_max = n_valeur_max
         self.mains = None
         self.actual_player = start_player
         self.mise = {'player': 0, 'n': 0, 'de': 0}
@@ -23,7 +24,7 @@ class Perudo:
         for n in n_des:
             assert n <= self.n_de_max
             tmp_mains.append(
-                np.concatenate((np.random.randint(1, 7, size = n), 
+                np.concatenate((np.random.randint(1, self.n_valeur_max + 1, size = n), 
                                 np.zeros(self.n_de_max - n, dtype = int)), axis=0))
         
         self.mains = tmp_mains
@@ -49,6 +50,19 @@ class Perudo:
         Return: None
         '''
         self.mise = {'player': 0, 'n': 0, 'de': 0}
+
+    def get_state(self):
+        ''' 
+        get_state
+        Retourne l'état actuel du jeu
+
+        Inputs: None
+        Return: str - Etat actuel du jeu
+        '''
+        string = ' '.join(str(x) for x in self.count_des_in_game(player = 1)) + \
+                 ' ' + str(sum(self.count_des_in_game(player = 2))) + \
+                 ' ' + str(self.mise['n']) + ' ' + str(self.mise['de'])
+        return string
 
     def next_player(self, actual_player):
         ''' 
@@ -131,7 +145,7 @@ class Perudo:
 
         # Si aucune mise actuelle
         if (mise_actuelle['de'] == 0):
-            for i in range(1, 7):
+            for i in range(1, self.n_valeur_max + 1):
                 for j in range(1, n_des_total + 1):
                     alternatives.append({'n': j, 'de': i})
 
@@ -142,12 +156,12 @@ class Perudo:
                     alternatives.append({'n': i, 'de': mise_actuelle['de']})
 
             # Augmentation de la valeur sans changement du nombre de dés misés
-            if (mise_actuelle['de'] < 6):
-                for i in range(mise_actuelle['de'] + 1, 7):
+            if (mise_actuelle['de'] < self.n_valeur_max):
+                for i in range(mise_actuelle['de'] + 1, self.n_valeur_max + 1):
                     alternatives.append({'n': mise_actuelle['n'], 'de': i})
 
             # Diminution de la valeur avec changement obligatoire du nombre de dés misés
-            if ((mise_actuelle['de'] > 1) & (mise_actuelle['de'] < 6)):
+            if ((mise_actuelle['de'] > 1) & (mise_actuelle['de'] < self.n_valeur_max)):
                 for i in range(1, mise_actuelle['de']):
                     for j in range(mise_actuelle['n'] + 1, n_des_total + 1):
                         alternatives.append({'n': j, 'de': i})
@@ -155,7 +169,7 @@ class Perudo:
         return alternatives
 
     def count_des_in_game(self, player=None):
-        count = np.zeros(6, dtype = int)
+        count = np.zeros(self.n_valeur_max, dtype = int)
 
         if player:
             for de in self.mains[player - 1]:

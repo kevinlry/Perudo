@@ -1,10 +1,13 @@
 import numpy as np
+import json
 
 class RandomPlayer:
-    def __init__(self):
+    def __init__(self, args=None):
         pass
 
-    def get_policy(self, alternatives):
+    def get_policy(self, game):
+
+        alternatives = game.get_alternatives()
 
         return_policy = {'type': 'mise', 'n': None, 'de': None}
         
@@ -20,3 +23,16 @@ class RandomPlayer:
 
         return return_policy
     
+class QLPlayer:
+    def __init__(self, args=None):
+        self.qmatrix = args
+
+    def get_policy(self, game):
+        try :
+            res = self.qmatrix.columns[np.argmax(self.qmatrix.loc[game.get_state(),:])]
+            res = res.replace("\'", "\"").replace("None", "null")
+
+            return json.loads(res)
+        
+        except:
+            return RandomPlayer().get_policy(game)
