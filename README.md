@@ -1,8 +1,10 @@
 # Perudo
 
+<img style="display:block;margin-left: auto;margin-right: auto;width: 50%;" src="https://m.media-amazon.com/images/S/aplus-media/vc/33305101-d370-4de8-9f15-1e231e560dc4.__CR0,0,970,600_PT0_SX970_V1___.png" alt= “perudo”>
+
 ## :mega: Contexte
 
-Le Perudo est un jeu de harsard et de stratégie qui se joue à partir de 2 joueurs. Chaque joueur détient 6 dés au début de la partie. Le but est de finir la partie en étant le seul joueur à avoir conservé au moins 1 dé. Dans notre cas, nous utiliserons la version simplifiée du jeu suivante :
+Le Perudo est un jeu de harsard et de stratégie qui se joue à partir de 2 joueurs. Chaque joueur détient un certain nombre de dés au début de la partie, le but est de finir la partie en étant le seul joueur à avoir conservé au moins 1 dé. Dans notre cas, nous utiliserons la version simplifiée du jeu suivante :
 
 1. Il y a deux joueurs au début de la partie, chacun détient 3 dés à 4 faces ;
 2. Les joueurs mélangent leurs dés ;
@@ -13,11 +15,15 @@ Le Perudo est un jeu de harsard et de stratégie qui se joue à partir de 2 joue
    - Dire "dudo", on compte alors le nombre de dés dans le jeu, si la mise annoncée est présente dans le jeu le joueur ayant dit "dudo" perd un dé, sinon le joueur ayant réalisé la mise perd un dé ;
 3. Si les deux joueurs ont au moins 1 dé, on retourne à l'étape 2, sinon le joueur qui n'a plus aucun dé à perdu la partie.
 
-Dans ce projet, nous implémenterons deux méthodes d'apprentissage par renforcement : Q-Learning et Monte-Carlo. Ces méthodes nous permettrons de choisir une action à réaliser selon l'état actuel du jeu en se basant sur un historique de parties. 
+Dans ce projet, nous implémenterons deux méthodes d'apprentissage par renforcement : Q-Learning et Monte-Carlo. Ces méthodes nous permettrons de choisir une action à réaliser selon l'état actuel du jeu en se basant sur un historique de parties. On définit alors les éléments suivants :
 
-## Installation
+- L'état du jeu (state) : la valeur des dés dans notre main, le nombre de dé(s) détenu(s) par l'adversaire et la mise actuelle ;
+- Une action : soit une mise (nombre de dé(s) et valeur du dé misé), soit "dudo" ;
+- La reward : 1 si l'action fait perdre un dé à l'adversaire, -1 si elle nous fait perdre un dé, 0 sinon.
 
-Pour récuper le projet :
+## :wrench: Installation
+
+Pour récupérer le projet :
 ```
 git clone https://github.com/kevinlry/Perudo.git
 cd .\Perudo\
@@ -29,9 +35,9 @@ pip install -r requirements.txt
 py perudoProblem.py
 ```
 
-_Note : Pour limiter le temps d'execution, les résultats de l'apprentissage par renforcement sont sauvegardés dans les fichiers "qmatrix" et "V_estimate". Ainsi, l'apprentissage n'est pas lancée à chaque execution, le script récupère ces fichiers s'ils existent. Si ces fichiers n'existent pas, le script lance de nouvelles simulations et relance l'apprentissage._
+_Note : Pour limiter le temps d'execution, les résultats de l'apprentissage par renforcement sont sauvegardés dans les fichiers "qmatrix" et "V_estimate". Ainsi, l'apprentissage n'est pas lancé à chaque exécution, le script récupère ces fichiers s'ils existent. Si ces fichiers n'existent pas, le script lance de nouvelles simulations et relance l'apprentissage._
 
-## Résultats
+## :link: Résultats
 
 Pour vérifier la cohérence des recommandations effectuées par les deux méthodes de renforcement, on simule l'état de jeu suivant : nous avons 2 dés de valeur 6, le joueur adverse a 2 dés et a misé 4 dés de valeur 1. En théorie, on devrait dire "dudo" puisque notre main contient 2 dés de valeur 6, il n'est donc pas possible d'avoir 4 dés de valeur 1 dans le jeu.
 
