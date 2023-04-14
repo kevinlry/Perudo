@@ -1,6 +1,6 @@
 # Perudo
 
-## Contexte
+## :mega: Contexte
 
 Le Perudo est un jeu de harsard et de stratégie qui se joue à partir de 2 joueurs. Chaque joueur détient 6 dés au début de la partie. Le but est de finir la partie en étant le seul joueur à avoir conservé au moins 1 dé. Dans notre cas, nous utiliserons la version simplifiée du jeu suivante :
 
@@ -20,11 +20,12 @@ Dans ce projet, nous implémenterons deux méthodes d'apprentissage par renforce
 Pour récuper le projet :
 ```
 git clone https://github.com/kevinlry/Perudo.git
-cd /Perudo
+cd .\Perudo\
 ```
 
 Pour lancer l'apprentissage par renforcement et visualiser les résultats :
 ```
+pip install -r requirements.txt
 py perudoProblem.py
 ```
 
@@ -50,3 +51,5 @@ Avec l'algo de Q-Learning, on recommande cette action :
 ```
 
 Pour comparer les deux méthodes de renforcement, on simule maintenant 200 parties pendant lesquelles on fait jouer les différentes politiques (aléatoire, Q-Learning et Monte-Carlo) l'une contre l'autre. La métrique d'évaluation des performances utilisée est le nombre de parties gagnées - le nombre de parties perdues. On voit alors clairement que les deux méthodes par renforcement sont plus performantes qu'une méthode de jeu aléatoire. Cependant, la méthode Q-Learning est meilleure que la méthode Monte-Carlo.
+
+![comparaison méthodes](/comparaison_methodes.png)
