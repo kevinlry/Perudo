@@ -1,5 +1,4 @@
 import numpy as np
-from IA_Players import RandomPlayer
 
 class Perudo:
     def __init__(self, n_players, n_de_max=5, n_valeur_max=6, start_player=1):
@@ -169,12 +168,23 @@ class Perudo:
         return alternatives
 
     def count_des_in_game(self, player=None):
+        ''' 
+        count_des_in_game
+        Compte le nombre de dés présents dans le jeu ou dans la main d'un joueur par valeur
+
+        Inputs: player - Int - Numéro du joueur pour lequel on veut compter les dés (None si tout le jeu)
+        Return: List[Int] - Nombre de dés par valeur
+            Exemple : [0, 1, 0, 0, 0, 5] s'il y a 5 dés de valeur 6 et 1 dé de valeur 2
+        '''
         count = np.zeros(self.n_valeur_max, dtype = int)
 
+        # Compter uniquement les dés d'un joueur
         if player:
             for de in self.mains[player - 1]:
                 if (de != 0):
                     count[de - 1] += 1
+
+        # Compter tous les dés dans le jeu
         else:
             for main in self.mains:
                 for de in main:
@@ -184,10 +194,18 @@ class Perudo:
         return count
     
     def check_game_end(self):
+        ''' 
+        check_game_end
+        Permet de vérifier si le jeu est terminé et retourne le joueur qui gagne la partie le cas échéant
+
+        Inputs: None
+        Return: Int(optional) - Numéro du joueur qui gagne la partie le cas échéant, None sinon
+        '''
         winner = -1
 
         mains_non_vides = [index for index, main in enumerate(self.mains) if sum(main) != 0]
 
+        # La partie est terminée si une seule main n'est pas vide
         if len(mains_non_vides) == 1:
             winner = mains_non_vides[0] + 1
 
@@ -204,25 +222,3 @@ class Perudo:
 
         if self.mise['player'] > 0:
             print(f"Mise du joueur {self.mise['player']} : {self.mise['n']} - {self.mise['de']}")
-
-
-if (False):
-    n_players = 2
-    start_player = np.random.randint(1, n_players + 1)
-
-    pygame.init()
-    fenetre = pygame.display.set_mode((640, 480))
-
-    game = Perudo(n_players = n_players, start_player = start_player)
-    game.print_state_game()
-
-    while game.check_game_end() == -1:
-        game.print_state_game(player = game.actual_player)
-
-        alternatives = game.get_alternatives()
-
-        policy = RandomPlayer().get_policy(alternatives)
-
-        game.play(policy)
-
-    print(game.check_game_end())

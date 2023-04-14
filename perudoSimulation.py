@@ -1,10 +1,23 @@
 import numpy as np
 import pandas as pd
-from IA_Players import RandomPlayer
+
+from IA_Players import MCPlayer, RandomPlayer
 from perudoGame import Perudo
 
 def simulate_perudo(agentPolicy, robotPolicy, params_policy_agent=None, params_policy_robot=None, n_de_max=5, n_valeur_max=6):
+    ''' 
+    simulate_perudo
+    Simulation d'une partie de Perudo
 
+    Inputs: 
+        agentPolicy - Object - Politique que va jouer l'agent
+        robotPolicy - Object - Politique que va jouer le robot
+        params_policy_agent - Object - Paramètre a donner à la politique de l'agent (Exemple : QMatrix)
+        params_policy_robot - Object - Paramètre a donner à la politique du robot (Exemple : QMatrix)
+        n_de_max - Int - Nombre de dés dans la main de chaque joueur au début de la partie
+        n_valeur_max - Int - Valeur maximale des dés (Par être réaliste : 4 ou 6)
+    Return: Dict - Historique des tours pendant la partie (états, actions et rewards)
+    '''
     gameHistory = {'state': [], 
                    'action': [], 
                    'reward': [], 
@@ -64,9 +77,18 @@ def simulate_perudo(agentPolicy, robotPolicy, params_policy_agent=None, params_p
     
     return(gameHistory)
 
+
 def run_qlearning():
+    ''' 
+    run_qlearning
+    Lance un apprentissage par la méthode Q-Learning
+
+    Inputs: None
+    Return: DataFrame - Q-Matrix
+    '''
     try:
         qmatrix = pd.read_pickle('qmatrix')
+
     except:
         # run bunch of simulations
         gameSimulations = []
@@ -119,3 +141,62 @@ def run_qlearning():
         qmatrix.to_pickle('qmatrix')
 
     return qmatrix
+
+
+def run_montecarlo():
+    ''' 
+    run_montecarlo
+    Lance un apprentissage par la méthode Monte-Carlo
+
+    Inputs: None
+    Return: DataFrame - V_estimate
+    '''
+    try:
+        running_V_estimate = pd.read_pickle('V_estimate')
+
+    except:
+        iter = 0
+        while (iter < 20):
+            
+            iter = iter + 1
+            print('Step\t', iter)
+            
+            # run a few simulations
+            gameSimulations = list()
+            N = 5000
+            for i in range(0, N):
+                if (iter == 1):
+                    o = pd.DataFrame.from_dict(simulate_perudo(RandomPlayer, RandomPlayer, n_de_max=3, n_valeur_max=4))
+                else:
+                    o = pd.DataFrame.from_dict(simulate_perudo(MCPlayer, RandomPlayer, params_policy_agent=running_V_estimate, n_de_max=3, n_valeur_max=4))
+
+                o['simu'] = i
+                o['reward_of_simu'] = o['reward'].iloc[-1]
+
+                gameSimulations.append(o)
+
+            gameSimulations = pd.concat(gameSimulations)
+            
+            # estimate V(s) by averaging returns
+            running_V_estimate = gameSimulations \
+                .assign(action = lambda DF: DF.action.astype(str)) \
+                .groupby(['state', 'action']) \
+                .agg({'reward_of_simu': 'mean'})
+            
+            idx = running_V_estimate \
+                .groupby(['state'])['reward_of_simu'] \
+                .transform(max) == running_V_estimate['reward_of_simu']
+
+            running_V_estimate = running_V_estimate[idx]
+
+            running_V_estimate.reset_index(inplace=True)
+            
+            running_V_estimate.rename(columns={"action": "best_action"}, inplace=True)
+
+            running_V_estimate = running_V_estimate.groupby('state').first()
+
+            running_V_estimate.reset_index(inplace=True)
+
+        running_V_estimate.to_pickle('V_estimate')
+        
+    return running_V_estimate
