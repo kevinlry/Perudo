@@ -2,6 +2,9 @@
 
 <img style="display:block;margin-left: auto;margin-right: auto;width: 50%;" src="https://m.media-amazon.com/images/S/aplus-media/vc/33305101-d370-4de8-9f15-1e231e560dc4.__CR0,0,970,600_PT0_SX970_V1___.png" alt= “perudo”>
 
+\
+Groupe de projet : Thomas GUICHET, Kévin LEROY, Rémi VERRONNEAU
+
 ## :mega: Contexte
 
 Le Perudo est un jeu de harsard et de stratégie qui se joue à partir de 2 joueurs. Chaque joueur détient un certain nombre de dés au début de la partie, le but est de finir la partie en étant le seul joueur à avoir conservé au moins 1 dé. Dans notre cas, nous utiliserons la version simplifiée du jeu suivante :
