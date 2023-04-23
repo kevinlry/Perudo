@@ -59,6 +59,40 @@ Avec l'algo de Q-Learning, on recommande cette action :
 {'type': 'dudo', 'n': None, 'de': None}
 ```
 
+On simule maintenant l'état suivant : nous avons 1 dé de valeur 1, le joueur adverse a 1 dé et a misé 1 dé de valeur 4. En théorie, on a plus de chance de gagner en disant "dudo".
+
+Les deux politiques recommandent bien de dire "dudo" :
+```
+====================== Méthode MC =========================
+Notre jeu : Un 1
+L'adverse a 1 dé et a misé un 4
+Avec l'algo MC, on recommande cette action :
+{'type': 'dudo', 'n': None, 'de': None}
+
+=================== Méthode QLearning =====================
+Notre jeu : Un 4
+L'adverse a 1 dé et a misé un 4
+Avec l'algo de Q-Learning, on recommande cette action :
+{'type': 'dudo', 'n': None, 'de': None}
+```
+
+Enfin, on simule l'état suivant : nous avons 2 dés de valeur 2, le joueur adverse a 1 dé et a misé 2 dés de valeur 2. En théorie, on ne peut pas dire "dudo" puisqu'on a déjà 2 dés de valeur 2 dans notre main, on pourrait soit miser 3 dés de valeur 2, soit essayer de bluffer.
+
+La polique de la méthode MC recommande de miser trois dés de valeur 2 alors que la méthode QLearning recommande de bluffer en misant trois dés de valeur 1 :
+```
+====================== Méthode MC =========================
+Notre jeu : Deux 2
+L'adverse a 1 dé et a misé deux 2
+Avec l'algo MC, on recommande cette action :
+{'type': 'mise', 'n': 3, 'de': 2}
+
+=================== Méthode QLearning =====================
+Notre jeu : Deux 2
+L'adverse a 1 dé et a misé deux 2
+Avec l'algo de Q-Learning, on recommande cette action :
+{'type': 'mise', 'n': 3, 'de': 1}
+```
+
 Pour comparer les deux méthodes de renforcement, on simule maintenant 200 parties pendant lesquelles on fait jouer les différentes politiques (aléatoire, Q-Learning et Monte-Carlo) l'une contre l'autre. La métrique d'évaluation des performances utilisée est le nombre de parties gagnées - le nombre de parties perdues. On voit alors clairement que les deux méthodes par renforcement sont plus performantes qu'une méthode de jeu aléatoire. Cependant, la méthode Q-Learning est meilleure que la méthode Monte-Carlo.
 
 ![comparaison méthodes](/comparaison_methodes.png)
